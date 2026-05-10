@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!Array.isArray(messages) || messages.length === 0)
       return NextResponse.json({ error: 'Messages invalides' }, { status: 400 })
 
-    const stream = anthropic.messages.stream({
+    const anthropicMessages = await anthropic.messages.create({
       model: 'claude-opus-4-7',
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
@@ -29,16 +29,20 @@ export async function POST(request: NextRequest) {
         role: m.role as 'user' | 'assistant',
         content: m.content,
       })),
+      stream: true,
     })
 
     const readable = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder()
         try {
-          for await (const event of stream) {
+          for await (const event of anthropicMessages) {
             if (event.type === 'content_block_delta' && event.delta.type === 'text_delta')
               controller.enqueue(encoder.encode(event.delta.text))
           }
+        } catch (streamError) {
+          console.error('Stream error:', streamError)
+          controller.enqueue(encoder.encode('⚠️ Erreur de connexion à l\'IA. Vérifiez la configuration.'))
         } finally {
           controller.close()
         }
@@ -50,6 +54,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Chat API error:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: 'Erreur serveur: ' + String(error) }, { status: 500 })
   }
 }
