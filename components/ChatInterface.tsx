@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, FormEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
@@ -91,16 +92,35 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
                 {msg.role === 'assistant' && (
                   <div className="w-7 h-7 bg-forest rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0 text-xs text-cream font-bold">H</div>
                 )}
-                <div className={`max-w-[75%] px-4 py-3 rounded-lg font-ibm text-sm leading-relaxed whitespace-pre-wrap ${
-                  msg.role === 'user' ? 'bg-forest text-cream rounded-br-none' : 'bg-cream border border-gold/20 text-ink rounded-bl-none'
+                <div className={`max-w-[75%] px-4 py-3 rounded-lg font-ibm text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-forest text-cream rounded-br-none'
+                    : 'bg-cream border border-gold/20 text-ink rounded-bl-none'
                 }`}>
-                  {msg.content}
-                  {msg.role === 'assistant' && isStreaming && i === messages.length - 1 && msg.content === '' && (
+                  {msg.role === 'user' ? (
+                    msg.content
+                  ) : msg.content === '' && isStreaming && i === messages.length - 1 ? (
                     <span className="inline-flex gap-1">
                       <span className="w-1.5 h-1.5 bg-forest/40 rounded-full animate-bounce [animation-delay:0ms]" />
                       <span className="w-1.5 h-1.5 bg-forest/40 rounded-full animate-bounce [animation-delay:150ms]" />
                       <span className="w-1.5 h-1.5 bg-forest/40 rounded-full animate-bounce [animation-delay:300ms]" />
                     </span>
+                  ) : (
+                    <ReactMarkdown
+                      components={{
+                        h1: ({children}) => <h1 className="font-playfair text-lg font-bold text-forest mt-3 mb-2">{children}</h1>,
+                        h2: ({children}) => <h2 className="font-playfair text-base font-bold text-forest mt-3 mb-1">{children}</h2>,
+                        h3: ({children}) => <h3 className="font-ibm font-semibold text-forest mt-2 mb-1">{children}</h3>,
+                        strong: ({children}) => <strong className="font-semibold text-forest">{children}</strong>,
+                        ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
+                        li: ({children}) => <li className="text-sm">{children}</li>,
+                        p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                        hr: () => <hr className="border-gold/30 my-3" />,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
                   )}
                 </div>
                 {msg.role === 'user' && (
