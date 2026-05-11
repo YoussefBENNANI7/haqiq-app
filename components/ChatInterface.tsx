@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
@@ -141,7 +142,7 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
                 {msg.role === 'assistant' && (
                   <div className="w-7 h-7 bg-forest rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0 text-xs text-cream font-bold">H</div>
                 )}
-                <div className={`max-w-[75%] px-4 py-3 rounded-lg font-ibm text-sm leading-relaxed ${
+                <div className={`max-w-[80%] px-4 py-3 rounded-lg font-ibm text-sm leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-forest text-cream rounded-br-none'
                     : 'bg-cream border border-gold/20 text-ink rounded-bl-none'
@@ -155,17 +156,30 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
                       <span className="w-1.5 h-1.5 bg-forest/40 rounded-full animate-bounce [animation-delay:300ms]" />
                     </span>
                   ) : (
-                    <ReactMarkdown components={{
-                      h1: ({children}) => <h1 className="font-playfair text-lg font-bold text-forest mt-3 mb-2">{children}</h1>,
-                      h2: ({children}) => <h2 className="font-playfair text-base font-bold text-forest mt-3 mb-1">{children}</h2>,
-                      h3: ({children}) => <h3 className="font-ibm font-semibold text-forest mt-2 mb-1">{children}</h3>,
-                      strong: ({children}) => <strong className="font-semibold text-forest">{children}</strong>,
-                      ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
-                      ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
-                      li: ({children}) => <li className="text-sm">{children}</li>,
-                      p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                      hr: () => <hr className="border-gold/30 my-3" />,
-                    }}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({children}) => <h1 className="font-playfair text-lg font-bold text-forest mt-3 mb-2">{children}</h1>,
+                        h2: ({children}) => <h2 className="font-playfair text-base font-bold text-forest mt-3 mb-1">{children}</h2>,
+                        h3: ({children}) => <h3 className="font-ibm font-semibold text-forest mt-2 mb-1">{children}</h3>,
+                        strong: ({children}) => <strong className="font-semibold text-forest">{children}</strong>,
+                        ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
+                        li: ({children}) => <li className="text-sm">{children}</li>,
+                        p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                        hr: () => <hr className="border-gold/30 my-3" />,
+                        table: ({children}) => (
+                          <div className="overflow-x-auto my-3">
+                            <table className="w-full border-collapse text-xs">{children}</table>
+                          </div>
+                        ),
+                        thead: ({children}) => <thead className="bg-forest/10">{children}</thead>,
+                        tbody: ({children}) => <tbody>{children}</tbody>,
+                        tr: ({children}) => <tr className="border-b border-gold/20">{children}</tr>,
+                        th: ({children}) => <th className="border border-gold/30 px-3 py-2 text-left font-semibold text-forest whitespace-nowrap">{children}</th>,
+                        td: ({children}) => <td className="border border-gold/20 px-3 py-2 text-ink/80">{children}</td>,
+                      }}
+                    >
                       {msg.content}
                     </ReactMarkdown>
                   )}
