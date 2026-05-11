@@ -14,12 +14,38 @@ const QUICK_TOPICS = [
 
 export default function ChatInterface({ userEmail }: { userEmail: string }) {
   const [messages, setMessages] = useState<Message[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    fetch('/api/conversations')
+      .then(r => r.json())
+      .then(data => {
+        if (data.messages?.length > 0) {
+          setMessages(data.messages)
+          setConversationId(data.id)
+        }
+      })
+      .finally(() => setIsLoading(false))
+  }, [])
+
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  async function saveConversation(msgs: Message[], id: string | null) {
+    const res = await fetch('/api/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: msgs, id }),
+    })
+    if (!id) {
+      const data = await res.json()
+      if (data.id) setConversationId(data.id)
+    }
+  }
 
   async function sendMessage(content: string) {
     if (!content.trim() || isStreaming) return
@@ -50,6 +76,8 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
           return updated
         })
       }
+      const finalMessages = [...updatedMessages, { role: 'assistant' as const, content: accumulated }]
+      await saveConversation(finalMessages, conversationId)
     } catch {
       setMessages((prev) => {
         const updated = [...prev]
@@ -63,6 +91,18 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
   }
 
   const username = userEmail.split('@')[0]
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-white border border-gold/20 rounded-lg flex items-center justify-center min-h-[500px]">
+        <div className="flex gap-2">
+          <span className="w-2 h-2 bg-forest/40 rounded-full animate-bounce [animation-delay:0ms]" />
+          <span className="w-2 h-2 bg-forest/40 rounded-full animate-bounce [animation-delay:150ms]" />
+          <span className="w-2 h-2 bg-forest/40 rounded-full animate-bounce [animation-delay:300ms]" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 bg-white border border-gold/20 rounded-lg flex flex-col overflow-hidden min-h-[500px]">
@@ -87,6 +127,15 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
           </div>
         ) : (
           <>
+            {messages.length > 0 && (
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={() => { setMessages([]); setConversationId(null) }}
+                  className="font-ibm text-xs text-ink/40 hover:text-ink/70 transition-colors">
+                  Nouvelle conversation
+                </button>
+              </div>
+            )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
@@ -106,19 +155,17 @@ export default function ChatInterface({ userEmail }: { userEmail: string }) {
                       <span className="w-1.5 h-1.5 bg-forest/40 rounded-full animate-bounce [animation-delay:300ms]" />
                     </span>
                   ) : (
-                    <ReactMarkdown
-                      components={{
-                        h1: ({children}) => <h1 className="font-playfair text-lg font-bold text-forest mt-3 mb-2">{children}</h1>,
-                        h2: ({children}) => <h2 className="font-playfair text-base font-bold text-forest mt-3 mb-1">{children}</h2>,
-                        h3: ({children}) => <h3 className="font-ibm font-semibold text-forest mt-2 mb-1">{children}</h3>,
-                        strong: ({children}) => <strong className="font-semibold text-forest">{children}</strong>,
-                        ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
-                        ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
-                        li: ({children}) => <li className="text-sm">{children}</li>,
-                        p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                        hr: () => <hr className="border-gold/30 my-3" />,
-                      }}
-                    >
+                    <ReactMarkdown components={{
+                      h1: ({children}) => <h1 className="font-playfair text-lg font-bold text-forest mt-3 mb-2">{children}</h1>,
+                      h2: ({children}) => <h2 className="font-playfair text-base font-bold text-forest mt-3 mb-1">{children}</h2>,
+                      h3: ({children}) => <h3 className="font-ibm font-semibold text-forest mt-2 mb-1">{children}</h3>,
+                      strong: ({children}) => <strong className="font-semibold text-forest">{children}</strong>,
+                      ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                      ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
+                      li: ({children}) => <li className="text-sm">{children}</li>,
+                      p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                      hr: () => <hr className="border-gold/30 my-3" />,
+                    }}>
                       {msg.content}
                     </ReactMarkdown>
                   )}
