@@ -35,15 +35,17 @@ export async function POST(request: NextRequest) {
         .update({ messages, updated_at: new Date().toISOString() })
         .eq('id', id)
         .eq('user_id', user.id)
+      return NextResponse.json({ ok: true, id })
     } else {
       const firstUserMsg = messages.find((m: { role: string }) => m.role === 'user')
       const title = firstUserMsg?.content?.slice(0, 60) ?? 'Conversation'
-      await supabase
+      const { data } = await supabase
         .from('conversations')
         .insert({ user_id: user.id, messages, title })
+        .select('id')
+        .single()
+      return NextResponse.json({ ok: true, id: data?.id ?? null })
     }
-
-    return NextResponse.json({ ok: true })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
